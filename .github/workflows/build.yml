@@ -1,0 +1,71 @@
+name: deploy to azure
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REPONAME: ${{ github.event.repository.name }}
+  WORKSPACE: ${{ github.workspace }}
+jobs:
+  Infra:
+    name: "Infra setup in Azure"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+
+      - name: Azure Login via OIDC
+        uses: azure/login@v1
+        with:
+            client-id: ${{ secrets.AZURE_CLIENT_ID }}
+            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+            enable-AzPSSession: true
+
+      - name: Get secrets from Azure Key Vault
+        uses: azure/get-keyvault-secrets@v1
+        with:
+              keyvault: 'devopsterraformacadev'  # <-- 🔁 Replace with your Key Vault name
+              secrets: |
+                spn-client-id
+                spn-client-secret
+                spn-tenant-id
+                spn-subscription-id
+      
+      - name: Export secrets to environment
+        run: |
+          echo "ARM_CLIENT_ID=$SPN_CLIENT_ID" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$SPN_CLIENT_SECRET" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$SPN_TENANT_ID" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$SPN_SUBSCRIPTION_ID" >> $GITHUB_ENV
+        
+      - name: Print terraform version
+        run: terraform version
+          
+      - name: Initalize Terraform
+        run: terraform init
+        working-directory: infra
+
+      - name: Terraform plan
+        run: |
+          terraform plan \
+            -var="client_id=$ARM_CLIENT_ID" \
+            -var="client_secret=$ARM_CLIENT_SECRET" \
+            -var="tenant_id=$ARM_TENANT_ID" \
+            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+            -out=tfplan
+        working-directory: infra
+
+      - name: terraform apply
+        run: terraform apply -auto-approve "tfplan"
+        working-directory: infra
