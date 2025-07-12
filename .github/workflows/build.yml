@@ -40,10 +40,10 @@ jobs:
       
       - name: Export secrets to environment
         run: |
-          echo "ARM_CLIENT_ID=$SPN_CLIENT_ID" >> $GITHUB_ENV
-          echo "ARM_CLIENT_SECRET=$SPN_CLIENT_SECRET" >> $GITHUB_ENV
-          echo "ARM_TENANT_ID=$SPN_TENANT_ID" >> $GITHUB_ENV
-          echo "ARM_SUBSCRIPTION_ID=$SPN_SUBSCRIPTION_ID" >> $GITHUB_ENV
+              echo "ARM_CLIENT_ID=${{ steps.get-secrets.outputs.spn-client-id }}" >> $GITHUB_ENV
+              echo "ARM_CLIENT_SECRET=${{ steps.get-secrets.outputs.spn-client-secret }}" >> $GITHUB_ENV
+              echo "ARM_TENANT_ID=${{ steps.get-secrets.outputs.spn-tenant-id }}" >> $GITHUB_ENV
+              echo "ARM_SUBSCRIPTION_ID=${{ steps.get-secrets.outputs.spn-subscription-id }}" >> $GITHUB_ENV
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
