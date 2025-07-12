@@ -1,4 +1,5 @@
 name: deploy to azure
+
 on:
   push:
     branches:
@@ -11,6 +12,7 @@ permissions:
 env:
   REPONAME: ${{ github.event.repository.name }}
   WORKSPACE: ${{ github.workspace }}
+
 jobs:
   Infra:
     name: "Infra setup in Azure"
@@ -20,48 +22,45 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.3.4
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v2
 
       - name: Azure Login via OIDC
         uses: azure/login@v1
         with:
-            client-id: ${{ secrets.AZURE_CLIENT_ID }}
-            tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-            enable-AzPSSession: false
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Get secrets from Azure Key Vault
+        id: get-secrets
         uses: azure/get-keyvault-secrets@v1
         with:
-            keyvault: 'devopsterraformacadev' 
-            secrets: spn-client-id,spn-client-secret,spn-tenant-id,spn-subscription-id
-      
+          keyvault: 'devopsterraformacadev'
+          secrets: spn-client-id,spn-client-secret,spn-tenant-id,spn-subscription-id
+
       - name: Export secrets to environment
         run: |
-              echo "ARM_CLIENT_ID=${{ steps.get-secrets.outputs.spn-client-id }}" >> $GITHUB_ENV
-              echo "ARM_CLIENT_SECRET=${{ steps.get-secrets.outputs.spn-client-secret }}" >> $GITHUB_ENV
-              echo "ARM_TENANT_ID=${{ steps.get-secrets.outputs.spn-tenant-id }}" >> $GITHUB_ENV
-              echo "ARM_SUBSCRIPTION_ID=${{ steps.get-secrets.outputs.spn-subscription-id }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_ID=${{ steps.get-secrets.outputs.spn-client-id }}" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=${{ steps.get-secrets.outputs.spn-client-secret }}" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=${{ steps.get-secrets.outputs.spn-tenant-id }}" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=${{ steps.get-secrets.outputs.spn-subscription-id }}" >> $GITHUB_ENV
+
+      - name: Confirm Terraform Env Vars
+        run: env | grep ARM_
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-            terraform_version: 1.5.7  # or your preferred version
-        
-      - name: Print terraform version
-        run: terraform version
-          
-      - name: Initalize Terraform
+          terraform_version: 1.5.7
+
+      - name: Terraform Init
         run: terraform init
         working-directory: infra
 
-      - name: Terraform plan
-        run: |
-          terraform plan -out=tfplan
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
         working-directory: infra
 
-      - name: terraform apply
-        run: terraform apply -auto-approve "tfplan"
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
         working-directory: infra
