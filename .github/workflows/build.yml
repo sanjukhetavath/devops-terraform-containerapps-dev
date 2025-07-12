@@ -36,11 +36,7 @@ jobs:
         uses: azure/get-keyvault-secrets@v1
         with:
             keyvault: 'devopsterraformacadev'  # <-- 🔁 Replace with your Key Vault name
-            secrets: |
-              spn-client-id
-              spn-client-secret
-              spn-tenant-id
-              spn-subscription-id
+            secrets: spn-client-id,spn-client-secret,spn-tenant-id,spn-subscription-id
       
       - name: Export secrets to environment
         run: |
