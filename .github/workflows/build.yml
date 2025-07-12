@@ -35,7 +35,7 @@ jobs:
       - name: Get secrets from Azure Key Vault
         uses: azure/get-keyvault-secrets@v1
         with:
-            keyvault: 'devopsterraformacadev'  # <-- 🔁 Replace with your Key Vault name
+            keyvault: 'devopsterraformacadev' 
             secrets: spn-client-id,spn-client-secret,spn-tenant-id,spn-subscription-id
       
       - name: Export secrets to environment
@@ -59,12 +59,7 @@ jobs:
 
       - name: Terraform plan
         run: |
-          terraform plan \
-            -var="client_id=$ARM_CLIENT_ID" \
-            -var="client_secret=$ARM_CLIENT_SECRET" \
-            -var="tenant_id=$ARM_TENANT_ID" \
-            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
-            -out=tfplan
+          terraform plan -out=tfplan
         working-directory: infra
 
       - name: terraform apply
